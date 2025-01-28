@@ -10,38 +10,70 @@ const ControllerApp = () => {
   const queryClient = useQueryClient();
 
   // Fetch officials
-  const { data: officials = [] } = useQuery<Official[]>({
+  const { data: officials = [], error: officialsError } = useQuery<Official[]>({
     queryKey: ['officials'],
     queryFn: async () => {
+      console.log('Fetching officials...');
       const { data, error } = await supabase
         .from('officials')
         .select('*');
       
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching officials:', error);
+        throw error;
+      }
+      console.log('Officials fetched:', data);
       return data || [];
-    }
+    },
+    retry: 1
   });
 
   // Fetch tasks
-  const { data: tasks = [] } = useQuery<Task[]>({
+  const { data: tasks = [], error: tasksError } = useQuery<Task[]>({
     queryKey: ['tasks'],
     queryFn: async () => {
+      console.log('Fetching tasks...');
       const { data, error } = await supabase
         .from('tasks')
         .select('*');
       
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching tasks:', error);
+        throw error;
+      }
+      console.log('Tasks fetched:', data);
       return data || [];
-    }
+    },
+    retry: 1
   });
+
+  // Show errors if any
+  useEffect(() => {
+    if (officialsError) {
+      toast({
+        title: "Error fetching officials",
+        description: officialsError.message,
+        variant: "destructive"
+      });
+    }
+    if (tasksError) {
+      toast({
+        title: "Error fetching tasks",
+        description: tasksError.message,
+        variant: "destructive"
+      });
+    }
+  }, [officialsError, tasksError, toast]);
 
   // Subscribe to real-time updates
   useEffect(() => {
+    console.log('Setting up real-time subscriptions...');
     const officialsSubscription = supabase
       .channel('officials-channel')
       .on('postgres_changes', 
         { event: '*', schema: 'public', table: 'officials' },
         () => {
+          console.log('Officials update received');
           queryClient.invalidateQueries({ queryKey: ['officials'] });
         }
       )
@@ -52,12 +84,14 @@ const ControllerApp = () => {
       .on('postgres_changes',
         { event: '*', schema: 'public', table: 'tasks' },
         () => {
+          console.log('Tasks update received');
           queryClient.invalidateQueries({ queryKey: ['tasks'] });
         }
       )
       .subscribe();
 
     return () => {
+      console.log('Cleaning up subscriptions...');
       officialsSubscription.unsubscribe();
       tasksSubscription.unsubscribe();
     };
