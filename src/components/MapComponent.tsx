@@ -21,27 +21,26 @@ export const MapComponent: React.FC<MapComponentProps> = ({
   isOfficialApp = false 
 }) => {
   const mapContainer = useRef<HTMLDivElement>(null);
-  const map = useRef<mapboxgl.Map | null>(null);
+  const mapInstance = useRef<mapboxgl.Map | null>(null);
   const markersRef = useRef<{ [key: number]: mapboxgl.Marker }>({});
 
+  // Initialize map
   useEffect(() => {
     if (!mapContainer.current) return;
 
-    // Initialize map
     mapboxgl.accessToken = 'YOUR_MAPBOX_TOKEN'; // Replace with your token
     
-    map.current = new mapboxgl.Map({
+    const map = new mapboxgl.Map({
       container: mapContainer.current,
       style: 'mapbox://styles/mapbox/streets-v11',
       center: [80.2707, 13.0827], // Chennai coordinates
       zoom: 12
     });
 
-    // Add Chennai zones (simplified for demo)
-    map.current.on('load', () => {
-      if (!map.current) return;
-      
-      map.current.addSource('zones', {
+    mapInstance.current = map;
+
+    map.on('load', () => {
+      map.addSource('zones', {
         type: 'geojson',
         data: {
           type: 'Feature',
@@ -59,7 +58,7 @@ export const MapComponent: React.FC<MapComponentProps> = ({
         }
       });
 
-      map.current.addLayer({
+      map.addLayer({
         id: 'zone-borders',
         type: 'line',
         source: 'zones',
@@ -70,33 +69,37 @@ export const MapComponent: React.FC<MapComponentProps> = ({
       });
     });
 
+    // Cleanup function
     return () => {
       Object.values(markersRef.current).forEach(marker => marker.remove());
-      map.current?.remove();
+      markersRef.current = {};
+      if (mapInstance.current) {
+        mapInstance.current.remove();
+        mapInstance.current = null;
+      }
     };
   }, []);
 
-  // Update markers when officials change
+  // Update markers
   useEffect(() => {
-    if (!map.current) return;
+    if (!mapInstance.current) return;
 
+    // Remove old markers
+    Object.values(markersRef.current).forEach(marker => marker.remove());
+    markersRef.current = {};
+
+    // Add new markers
     officials.forEach(official => {
-      let marker = markersRef.current[official.id];
+      const el = document.createElement('div');
+      el.className = 'w-4 h-4 bg-bandobast-accent rounded-full border-2 border-white';
       
-      if (!marker) {
-        const el = document.createElement('div');
-        el.className = 'w-4 h-4 bg-bandobast-accent rounded-full border-2 border-white';
-        
-        marker = new mapboxgl.Marker(el)
-          .setLngLat(official.location)
-          .addTo(map.current!);
-        
-        markersRef.current[official.id] = marker;
-      } else {
-        marker.setLngLat(official.location);
-      }
+      const marker = new mapboxgl.Marker(el)
+        .setLngLat(official.location)
+        .addTo(mapInstance.current!);
+      
+      markersRef.current[official.id] = marker;
 
-      // Check if official is outside zone (simplified)
+      // Check zone violation
       const [lng, lat] = official.location;
       if (
         lng < 80.2497 || lng > 80.2897 ||
