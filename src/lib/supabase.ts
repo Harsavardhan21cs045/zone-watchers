@@ -9,18 +9,26 @@ if (!supabaseUrl || !supabaseAnonKey) {
   throw new Error('Missing Supabase credentials');
 }
 
+// Create Supabase client with updated configuration
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
-    persistSession: true,
     autoRefreshToken: true,
-    detectSessionInUrl: true
+    persistSession: false,
+    detectSessionInUrl: false
   },
   global: {
+    fetch: fetch.bind(globalThis),
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${supabaseAnonKey}`
+      'apikey': supabaseAnonKey
     }
   }
+});
+
+// Log connection status
+supabase.auth.onAuthStateChange((event, session) => {
+  console.log('Supabase auth event:', event);
+  console.log('Session status:', session ? 'active' : 'none');
 });
 
 export type Task = {
