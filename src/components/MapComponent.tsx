@@ -26,14 +26,13 @@ export const MapComponent: React.FC<MapComponentProps> = ({
   const mapInstance = useRef<mapboxgl.Map | null>(null);
   const markersRef = useRef<{ [key: string]: mapboxgl.Marker }>({});
 
-  // Initialize map
   useEffect(() => {
     if (!mapContainer.current) return;
     
     const map = new mapboxgl.Map({
       container: mapContainer.current,
       style: 'mapbox://styles/mapbox/streets-v11',
-      center: [80.2707, 13.0827], // Chennai coordinates
+      center: [80.2707, 13.0827],
       zoom: 12
     });
 
@@ -79,7 +78,6 @@ export const MapComponent: React.FC<MapComponentProps> = ({
     };
   }, []);
 
-  // Update markers
   useEffect(() => {
     if (!mapInstance.current) return;
 
