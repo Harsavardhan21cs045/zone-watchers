@@ -132,13 +132,13 @@ const OfficialApp = () => {
           <MapComponent 
             officials={[
               { 
-                id: parseInt(currentOfficial.id), 
+                id: currentOfficial.id,
                 name: currentOfficial.name, 
                 location: currentOfficial.current_location || [80.2707, 13.0827], 
                 status: currentOfficial.status 
               },
               ...tasks.map(task => ({
-                id: parseInt(task.id),
+                id: task.id,
                 name: task.title,
                 location: task.location,
                 status: task.status
