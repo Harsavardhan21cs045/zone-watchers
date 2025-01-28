@@ -15,6 +15,9 @@ interface MapComponentProps {
   isOfficialApp?: boolean;
 }
 
+// Set the Mapbox token
+mapboxgl.accessToken = 'pk.eyJ1IjoibWFwYm94IiwiYSI6ImNpejY4M29iazA2Z2gycXA4N2pmbDZmangifQ.-g_vE53SD2WrJ6tFX7QHmA';
+
 export const MapComponent: React.FC<MapComponentProps> = ({ 
   officials, 
   onZoneViolation,
@@ -27,8 +30,6 @@ export const MapComponent: React.FC<MapComponentProps> = ({
   // Initialize map
   useEffect(() => {
     if (!mapContainer.current) return;
-
-    mapboxgl.accessToken = 'YOUR_MAPBOX_TOKEN'; // Replace with your token
     
     const map = new mapboxgl.Map({
       container: mapContainer.current,
@@ -91,7 +92,7 @@ export const MapComponent: React.FC<MapComponentProps> = ({
     // Add new markers
     officials.forEach(official => {
       const el = document.createElement('div');
-      el.className = 'w-4 h-4 bg-bandobast-accent rounded-full border-2 border-white';
+      el.className = 'w-4 h-4 bg-blue-500 rounded-full border-2 border-white';
       
       const marker = new mapboxgl.Marker(el)
         .setLngLat(official.location)
