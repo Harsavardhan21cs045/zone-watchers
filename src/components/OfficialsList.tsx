@@ -1,7 +1,7 @@
 import React from 'react';
 
 interface Official {
-  id: number;
+  id: string;  // Changed from number to string to match Supabase's type
   name: string;
   status: string;
 }
