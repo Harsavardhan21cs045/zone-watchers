@@ -3,7 +3,7 @@ import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 
 interface Official {
-  id: string; // Changed from number to string to match Supabase types
+  id: string;
   name: string;
   location: [number, number];
   status: string;
@@ -11,11 +11,10 @@ interface Official {
 
 interface MapComponentProps {
   officials: Official[];
-  onZoneViolation?: (officialId: string) => void; // Updated to accept string ID
+  onZoneViolation?: (officialId: string) => void;
   isOfficialApp?: boolean;
 }
 
-// Set the Mapbox token
 mapboxgl.accessToken = 'pk.eyJ1IjoibWFwYm94IiwiYSI6ImNpejY4M29iazA2Z2gycXA4N2pmbDZmangifQ.-g_vE53SD2WrJ6tFX7QHmA';
 
 export const MapComponent: React.FC<MapComponentProps> = ({ 
@@ -70,7 +69,6 @@ export const MapComponent: React.FC<MapComponentProps> = ({
       });
     });
 
-    // Cleanup function
     return () => {
       Object.values(markersRef.current).forEach(marker => marker.remove());
       markersRef.current = {};
@@ -85,11 +83,9 @@ export const MapComponent: React.FC<MapComponentProps> = ({
   useEffect(() => {
     if (!mapInstance.current) return;
 
-    // Remove old markers
     Object.values(markersRef.current).forEach(marker => marker.remove());
     markersRef.current = {};
 
-    // Add new markers
     officials.forEach(official => {
       const el = document.createElement('div');
       el.className = 'w-4 h-4 bg-blue-500 rounded-full border-2 border-white';
@@ -100,7 +96,6 @@ export const MapComponent: React.FC<MapComponentProps> = ({
       
       markersRef.current[official.id] = marker;
 
-      // Check zone violation
       const [lng, lat] = official.location;
       if (
         lng < 80.2497 || lng > 80.2897 ||
