@@ -3,9 +3,16 @@ import { MapComponent } from '../components/MapComponent';
 import { OfficialsList } from '../components/OfficialsList';
 import { useToast } from '@/hooks/use-toast';
 
+interface Official {
+  id: number;
+  name: string;
+  location: [number, number];
+  status: string;
+}
+
 const ControllerApp = () => {
   const { toast } = useToast();
-  const [officials] = useState([
+  const [officials] = useState<Official[]>([
     { id: 1, name: 'Officer Kumar', location: [80.2707, 13.0827], status: 'on-duty' },
     { id: 2, name: 'Officer Priya', location: [80.2526, 13.0010], status: 'on-duty' },
   ]);

@@ -45,6 +45,7 @@ export const MapComponent: React.FC<MapComponentProps> = ({
         type: 'geojson',
         data: {
           type: 'Feature',
+          properties: {},
           geometry: {
             type: 'Polygon',
             coordinates: [[
