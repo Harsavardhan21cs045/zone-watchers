@@ -15,13 +15,14 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     autoRefreshToken: true,
     persistSession: true,
     detectSessionInUrl: false
-  },
-  headers: {
-    'Content-Type': 'application/json',
-    'apikey': supabaseAnonKey,
-    'Authorization': `Bearer ${supabaseAnonKey}`
   }
 });
+
+// Add default headers to all requests
+supabase.rest.headers = {
+  'apikey': supabaseAnonKey,
+  'Authorization': `Bearer ${supabaseAnonKey}`
+};
 
 // Log connection status
 supabase.auth.onAuthStateChange((event, session) => {
