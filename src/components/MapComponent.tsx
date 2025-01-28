@@ -3,7 +3,7 @@ import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 
 interface Official {
-  id: string;
+  id: string;  // Changed from number to string to match Supabase's type
   name: string;
   location: [number, number];
   status: string;
