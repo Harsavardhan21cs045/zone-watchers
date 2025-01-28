@@ -13,15 +13,13 @@ if (!supabaseUrl || !supabaseAnonKey) {
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
     autoRefreshToken: true,
-    persistSession: false,
+    persistSession: true,
     detectSessionInUrl: false
   },
-  global: {
-    fetch: fetch.bind(globalThis),
-    headers: {
-      'Content-Type': 'application/json',
-      'apikey': supabaseAnonKey
-    }
+  headers: {
+    'Content-Type': 'application/json',
+    'apikey': supabaseAnonKey,
+    'Authorization': `Bearer ${supabaseAnonKey}`
   }
 });
 
@@ -29,6 +27,7 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
 supabase.auth.onAuthStateChange((event, session) => {
   console.log('Supabase auth event:', event);
   console.log('Session status:', session ? 'active' : 'none');
+  console.log('Current session:', session);
 });
 
 export type Task = {
