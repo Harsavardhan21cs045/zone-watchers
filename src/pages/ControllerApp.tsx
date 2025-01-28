@@ -1,24 +1,70 @@
-import React, { useState } from 'react';
+import React, { useEffect } from 'react';
 import { MapComponent } from '../components/MapComponent';
 import { OfficialsList } from '../components/OfficialsList';
 import { useToast } from '@/hooks/use-toast';
-
-interface Official {
-  id: number;
-  name: string;
-  location: [number, number];
-  status: string;
-}
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { supabase, type Task, type Official } from '../lib/supabase';
 
 const ControllerApp = () => {
   const { toast } = useToast();
-  const [officials] = useState<Official[]>([
-    { id: 1, name: 'Officer Kumar', location: [80.2707, 13.0827], status: 'on-duty' },
-    { id: 2, name: 'Officer Priya', location: [80.2526, 13.0010], status: 'on-duty' },
-  ]);
+  const queryClient = useQueryClient();
+
+  // Fetch officials
+  const { data: officials = [] } = useQuery<Official[]>({
+    queryKey: ['officials'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('officials')
+        .select('*');
+      
+      if (error) throw error;
+      return data || [];
+    }
+  });
+
+  // Fetch tasks
+  const { data: tasks = [] } = useQuery<Task[]>({
+    queryKey: ['tasks'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('tasks')
+        .select('*');
+      
+      if (error) throw error;
+      return data || [];
+    }
+  });
+
+  // Subscribe to real-time updates
+  useEffect(() => {
+    const officialsSubscription = supabase
+      .channel('officials-channel')
+      .on('postgres_changes', 
+        { event: '*', schema: 'public', table: 'officials' },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ['officials'] });
+        }
+      )
+      .subscribe();
+
+    const tasksSubscription = supabase
+      .channel('tasks-channel')
+      .on('postgres_changes',
+        { event: '*', schema: 'public', table: 'tasks' },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ['tasks'] });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      officialsSubscription.unsubscribe();
+      tasksSubscription.unsubscribe();
+    };
+  }, [queryClient]);
 
   const handleZoneViolation = (officialId: number) => {
-    const official = officials.find(o => o.id === officialId);
+    const official = officials.find(o => o.id === officialId.toString());
     if (official) {
       toast({
         title: "Zone Violation Alert",
@@ -35,7 +81,15 @@ const ControllerApp = () => {
         <OfficialsList officials={officials} />
       </div>
       <div className="w-3/4">
-        <MapComponent officials={officials} onZoneViolation={handleZoneViolation} />
+        <MapComponent 
+          officials={officials.map(official => ({
+            id: parseInt(official.id),
+            name: official.name,
+            location: official.current_location || [80.2707, 13.0827],
+            status: official.status
+          }))} 
+          onZoneViolation={handleZoneViolation} 
+        />
       </div>
     </div>
   );
