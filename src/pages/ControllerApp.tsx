@@ -63,8 +63,8 @@ const ControllerApp = () => {
     };
   }, [queryClient]);
 
-  const handleZoneViolation = (officialId: number) => {
-    const official = officials.find(o => parseInt(o.id) === officialId);
+  const handleZoneViolation = (officialId: string) => {
+    const official = officials.find(o => o.id === officialId);
     if (official) {
       toast({
         title: "Zone Violation Alert",
@@ -83,7 +83,7 @@ const ControllerApp = () => {
       <div className="w-3/4">
         <MapComponent 
           officials={officials.map(official => ({
-            id: parseInt(official.id),
+            id: official.id,
             name: official.name,
             location: official.current_location || [80.2707, 13.0827],
             status: official.status

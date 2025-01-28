@@ -3,7 +3,7 @@ import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 
 interface Official {
-  id: number;
+  id: string; // Changed from number to string to match Supabase types
   name: string;
   location: [number, number];
   status: string;
@@ -11,7 +11,7 @@ interface Official {
 
 interface MapComponentProps {
   officials: Official[];
-  onZoneViolation?: (officialId: number) => void;
+  onZoneViolation?: (officialId: string) => void; // Updated to accept string ID
   isOfficialApp?: boolean;
 }
 
@@ -25,7 +25,7 @@ export const MapComponent: React.FC<MapComponentProps> = ({
 }) => {
   const mapContainer = useRef<HTMLDivElement>(null);
   const mapInstance = useRef<mapboxgl.Map | null>(null);
-  const markersRef = useRef<{ [key: number]: mapboxgl.Marker }>({});
+  const markersRef = useRef<{ [key: string]: mapboxgl.Marker }>({});
 
   // Initialize map
   useEffect(() => {
