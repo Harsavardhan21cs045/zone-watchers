@@ -64,7 +64,7 @@ const ControllerApp = () => {
   }, [queryClient]);
 
   const handleZoneViolation = (officialId: number) => {
-    const official = officials.find(o => o.id === officialId.toString());
+    const official = officials.find(o => parseInt(o.id) === officialId);
     if (official) {
       toast({
         title: "Zone Violation Alert",
