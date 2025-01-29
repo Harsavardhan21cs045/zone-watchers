@@ -10,40 +10,46 @@ const ControllerApp = () => {
   const queryClient = useQueryClient();
 
   // Fetch officials with location tracking
-  const { data: officials = [], error: officialsError } = useQuery<Official[]>({
+  const { data: officials = [], error: officialsError } = useQuery({
     queryKey: ['officials'],
     queryFn: async () => {
       console.log('Fetching officials...');
-      const { data, error } = await supabase
-        .from('officials')
-        .select('*')
-        .order('last_updated', { ascending: false });
-      
-      if (error) {
+      try {
+        const { data, error } = await supabase
+          .from('officials')
+          .select('*')
+          .order('last_updated', { ascending: false });
+        
+        if (error) throw error;
+        
+        console.log('Officials fetched:', data);
+        return data || [];
+      } catch (error) {
         console.error('Error fetching officials:', error);
         throw error;
       }
-      console.log('Officials fetched:', data);
-      return data || [];
     },
-    refetchInterval: 5000, // Refetch every 5 seconds
+    refetchInterval: 5000,
   });
 
   // Fetch tasks
-  const { data: tasks = [], error: tasksError } = useQuery<Task[]>({
+  const { data: tasks = [], error: tasksError } = useQuery({
     queryKey: ['tasks'],
     queryFn: async () => {
       console.log('Fetching tasks...');
-      const { data, error } = await supabase
-        .from('tasks')
-        .select('*');
-      
-      if (error) {
+      try {
+        const { data, error } = await supabase
+          .from('tasks')
+          .select('*');
+        
+        if (error) throw error;
+        
+        console.log('Tasks fetched:', data);
+        return data || [];
+      } catch (error) {
         console.error('Error fetching tasks:', error);
         throw error;
       }
-      console.log('Tasks fetched:', data);
-      return data || [];
     },
   });
 
@@ -108,6 +114,13 @@ const ControllerApp = () => {
     }
   };
 
+  const mappedOfficials = officials.map(official => ({
+    id: official.id,
+    name: official.name,
+    location: official.current_location || [80.2707, 13.0827],
+    status: official.status
+  }));
+
   return (
     <div className="flex h-screen bg-gray-100">
       <div className="w-1/4 bg-white p-4 shadow-lg overflow-y-auto">
@@ -116,12 +129,7 @@ const ControllerApp = () => {
       </div>
       <div className="w-3/4">
         <MapComponent 
-          officials={officials.map(official => ({
-            id: official.id,
-            name: official.name,
-            location: official.current_location || [80.2707, 13.0827],
-            status: official.status
-          }))} 
+          officials={mappedOfficials}
           onZoneViolation={handleZoneViolation} 
         />
       </div>
