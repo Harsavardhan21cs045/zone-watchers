@@ -11,11 +11,16 @@ const OfficialApp = () => {
   const queryClient = useQueryClient();
 
   // Fetch current official's data
-  const { data: currentOfficial } = useQuery<Official>({
+  const { data: currentOfficial, isLoading: isLoadingOfficial, error: officialError } = useQuery({
     queryKey: ['currentOfficial'],
     queryFn: async () => {
+      console.log('Fetching current official data...');
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('Not authenticated');
+      
+      if (!user) {
+        console.log('No authenticated user found');
+        throw new Error('Not authenticated');
+      }
 
       const { data, error } = await supabase
         .from('officials')
@@ -23,17 +28,27 @@ const OfficialApp = () => {
         .eq('id', user.id)
         .single();
       
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching official:', error);
+        throw error;
+      }
+      
+      console.log('Official data fetched:', data);
       return data;
     }
   });
 
   // Fetch incomplete tasks
-  const { data: tasks = [] } = useQuery<Task[]>({
+  const { data: tasks = [], isLoading: isLoadingTasks, error: tasksError } = useQuery({
     queryKey: ['officialTasks'],
     queryFn: async () => {
+      console.log('Fetching tasks...');
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('Not authenticated');
+      
+      if (!user) {
+        console.log('No authenticated user found');
+        throw new Error('Not authenticated');
+      }
 
       const { data, error } = await supabase
         .from('tasks')
@@ -41,26 +56,53 @@ const OfficialApp = () => {
         .eq('assigned_to', user.id)
         .in('status', ['pending', 'in-progress']);
       
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching tasks:', error);
+        throw error;
+      }
+      
+      console.log('Tasks fetched:', data);
       return data || [];
-    }
+    },
+    enabled: !!currentOfficial // Only fetch tasks if we have the current official
   });
 
   // Update location mutation
   const updateLocation = useMutation({
     mutationFn: async (location: [number, number]) => {
+      console.log('Updating location:', location);
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('Not authenticated');
+      
+      if (!user) {
+        console.log('No authenticated user found');
+        throw new Error('Not authenticated');
+      }
 
       const { error } = await supabase
         .from('officials')
-        .update({ current_location: location, last_updated: new Date().toISOString() })
+        .update({ 
+          current_location: location, 
+          last_updated: new Date().toISOString() 
+        })
         .eq('id', user.id);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error updating location:', error);
+        throw error;
+      }
+      
+      console.log('Location updated successfully');
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['currentOfficial'] });
+    },
+    onError: (error) => {
+      console.error('Location update error:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update location",
+        variant: "destructive"
+      });
     }
   });
 
@@ -82,22 +124,51 @@ const OfficialApp = () => {
 
   // Subscribe to real-time updates
   useEffect(() => {
+    console.log('Setting up real-time subscription...');
     const tasksSubscription = supabase
       .channel('official-tasks')
       .on('postgres_changes',
         { event: '*', schema: 'public', table: 'tasks' },
-        () => {
+        (payload) => {
+          console.log('Tasks update received:', payload);
           queryClient.invalidateQueries({ queryKey: ['officialTasks'] });
         }
       )
       .subscribe();
 
     return () => {
+      console.log('Cleaning up subscription...');
       tasksSubscription.unsubscribe();
     };
   }, [queryClient]);
 
-  if (!currentOfficial) return null;
+  // Handle loading states
+  if (isLoadingOfficial || isLoadingTasks) {
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <div className="text-lg">Loading...</div>
+      </div>
+    );
+  }
+
+  // Handle errors
+  if (officialError || tasksError) {
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <div className="text-red-500">
+          {(officialError as Error)?.message || (tasksError as Error)?.message || 'An error occurred'}
+        </div>
+      </div>
+    );
+  }
+
+  if (!currentOfficial) {
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <div className="text-lg">Please log in to access the official dashboard</div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col h-screen bg-gray-100">
