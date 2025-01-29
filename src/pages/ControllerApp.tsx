@@ -2,21 +2,22 @@ import React, { useEffect } from 'react';
 import { MapComponent } from '../components/MapComponent';
 import { OfficialsList } from '../components/OfficialsList';
 import { useToast } from '@/hooks/use-toast';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase, type Task, type Official } from '../lib/supabase';
 
 const ControllerApp = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  // Fetch officials
+  // Fetch officials with location tracking
   const { data: officials = [], error: officialsError } = useQuery<Official[]>({
     queryKey: ['officials'],
     queryFn: async () => {
       console.log('Fetching officials...');
       const { data, error } = await supabase
         .from('officials')
-        .select('*');
+        .select('*')
+        .order('last_updated', { ascending: false });
       
       if (error) {
         console.error('Error fetching officials:', error);
@@ -25,7 +26,7 @@ const ControllerApp = () => {
       console.log('Officials fetched:', data);
       return data || [];
     },
-    retry: 1
+    refetchInterval: 5000, // Refetch every 5 seconds
   });
 
   // Fetch tasks
@@ -44,7 +45,6 @@ const ControllerApp = () => {
       console.log('Tasks fetched:', data);
       return data || [];
     },
-    retry: 1
   });
 
   // Show errors if any
@@ -72,8 +72,8 @@ const ControllerApp = () => {
       .channel('officials-channel')
       .on('postgres_changes', 
         { event: '*', schema: 'public', table: 'officials' },
-        () => {
-          console.log('Officials update received');
+        (payload) => {
+          console.log('Officials update received:', payload);
           queryClient.invalidateQueries({ queryKey: ['officials'] });
         }
       )
@@ -83,8 +83,8 @@ const ControllerApp = () => {
       .channel('tasks-channel')
       .on('postgres_changes',
         { event: '*', schema: 'public', table: 'tasks' },
-        () => {
-          console.log('Tasks update received');
+        (payload) => {
+          console.log('Tasks update received:', payload);
           queryClient.invalidateQueries({ queryKey: ['tasks'] });
         }
       )
@@ -112,7 +112,7 @@ const ControllerApp = () => {
     <div className="flex h-screen bg-gray-100">
       <div className="w-1/4 bg-white p-4 shadow-lg overflow-y-auto">
         <h1 className="text-2xl font-bold text-bandobast-primary mb-4">Controller Dashboard</h1>
-        <OfficialsList officials={officials} />
+        <OfficialsList officials={officials} showLocation={true} />
       </div>
       <div className="w-3/4">
         <MapComponent 

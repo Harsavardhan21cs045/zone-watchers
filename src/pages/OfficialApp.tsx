@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import { MapComponent } from '../components/MapComponent';
 import { useToast } from '@/hooks/use-toast';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase, type Task, type Official } from '../lib/supabase';
 
@@ -27,7 +28,7 @@ const OfficialApp = () => {
     }
   });
 
-  // Fetch assigned tasks
+  // Fetch incomplete tasks
   const { data: tasks = [] } = useQuery<Task[]>({
     queryKey: ['officialTasks'],
     queryFn: async () => {
@@ -37,7 +38,8 @@ const OfficialApp = () => {
       const { data, error } = await supabase
         .from('tasks')
         .select('*')
-        .eq('assigned_to', user.id);
+        .eq('assigned_to', user.id)
+        .in('status', ['pending', 'in-progress']);
       
       if (error) throw error;
       return data || [];
@@ -108,7 +110,7 @@ const OfficialApp = () => {
         <div className="w-1/3 space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>Current Tasks</CardTitle>
+              <CardTitle>Pending Tasks</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
@@ -118,11 +120,16 @@ const OfficialApp = () => {
                     className="p-3 bg-card rounded-lg border shadow-sm"
                   >
                     <h3 className="font-medium">{task.title}</h3>
-                    <p className="text-sm text-muted-foreground capitalize">
-                      Status: {task.status}
-                    </p>
+                    <div className="flex justify-between items-center mt-2">
+                      <Badge variant={task.status === 'pending' ? 'destructive' : 'default'}>
+                        {task.status}
+                      </Badge>
+                    </div>
                   </div>
                 ))}
+                {tasks.length === 0 && (
+                  <p className="text-sm text-muted-foreground">No pending tasks</p>
+                )}
               </div>
             </CardContent>
           </Card>
@@ -136,13 +143,7 @@ const OfficialApp = () => {
                 name: currentOfficial.name, 
                 location: currentOfficial.current_location || [80.2707, 13.0827], 
                 status: currentOfficial.status 
-              },
-              ...tasks.map(task => ({
-                id: task.id,
-                name: task.title,
-                location: task.location,
-                status: task.status
-              }))
+              }
             ]}
             isOfficialApp={true}
           />
