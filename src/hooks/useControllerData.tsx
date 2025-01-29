@@ -1,6 +1,7 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '../lib/supabase';
 import { mockTasks } from '../data/mockTasks';
+import { mockOfficials } from '../data/mockOfficials';
 import { useToast } from './use-toast';
 import { useEffect } from 'react';
 
@@ -21,7 +22,8 @@ export const useControllerData = () => {
         
         if (error) {
           console.error('Supabase error:', error);
-          return [];
+          console.log('Using mock officials data');
+          return mockOfficials;
         }
         
         // Map data to ensure serializable objects
@@ -37,20 +39,27 @@ export const useControllerData = () => {
         return serializedOfficials;
       } catch (error) {
         console.error('Error fetching officials:', error);
-        return [];
+        console.log('Using mock officials data due to error');
+        return mockOfficials;
       }
     },
     refetchInterval: 5000,
     retry: 1
   });
 
-  // Use mock tasks since we're having connection issues
-  const { data: tasks = mockTasks } = useQuery({
+  // Use mock tasks and assign them to officials
+  const { data: tasks = [] } = useQuery({
     queryKey: ['tasks'],
     queryFn: async () => {
-      console.log('Using mock tasks due to connection issues');
-      return mockTasks;
+      console.log('Using mock tasks and assigning to officials');
+      const availableOfficials = officials.filter(off => off.status === 'on-duty');
+      
+      return mockTasks.map((task, index) => ({
+        ...task,
+        assigned_to: availableOfficials[index % availableOfficials.length]?.id || null
+      }));
     },
+    enabled: !!officials.length,
     staleTime: Infinity
   });
 
@@ -59,7 +68,7 @@ export const useControllerData = () => {
     if (officialsError) {
       toast({
         title: "Connection Issue",
-        description: "Using cached data. Please check your connection.",
+        description: "Using mock data. Please check your connection.",
         variant: "destructive"
       });
     }
@@ -89,7 +98,7 @@ export const useControllerData = () => {
   }, [queryClient]);
 
   return { 
-    officials: officials || [], 
+    officials: officials || mockOfficials, 
     tasks: tasks || mockTasks 
   };
 };
