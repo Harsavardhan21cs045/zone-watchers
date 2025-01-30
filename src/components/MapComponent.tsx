@@ -47,8 +47,9 @@ export const MapComponent: React.FC<MapComponentProps> = ({
       newMap.on('load', () => {
         console.log('Map loaded successfully');
         if (map.current) {
-          new ChennaiBoundary({ map: map.current });
-          new OfficialMarkers({ 
+          // Create instances without 'new' keyword
+          ChennaiBoundary({ map: map.current });
+          OfficialMarkers({ 
             map: map.current, 
             officials, 
             onZoneViolation 
