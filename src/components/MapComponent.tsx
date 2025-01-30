@@ -25,44 +25,55 @@ export const MapComponent: React.FC<MapComponentProps> = ({
   isOfficialApp = false 
 }) => {
   const mapContainer = useRef<HTMLDivElement>(null);
-  const mapInstance = useRef<mapboxgl.Map | null>(null);
+  const map = useRef<mapboxgl.Map | null>(null);
 
   useEffect(() => {
-    if (!mapContainer.current) return;
+    if (!mapContainer.current || map.current) return;
 
+    console.log('Initializing map...');
+    
     try {
-      const map = new mapboxgl.Map({
+      const newMap = new mapboxgl.Map({
         container: mapContainer.current,
-        style: 'mapbox://styles/mapbox/streets-v11',
+        style: 'mapbox://styles/mapbox/streets-v12',
         center: [80.2707, 13.0827], // Chennai coordinates
         zoom: 12,
-        pitch: 45, // Add some tilt to the map
-        bearing: -45 // Rotate slightly for better perspective
+        pitch: 45,
+        bearing: -45
       });
 
-      mapInstance.current = map;
+      map.current = newMap;
+
+      newMap.on('load', () => {
+        console.log('Map loaded successfully');
+        if (map.current) {
+          new ChennaiBoundary({ map: map.current });
+          new OfficialMarkers({ 
+            map: map.current, 
+            officials, 
+            onZoneViolation 
+          });
+        }
+      });
 
       // Add navigation controls
-      map.addControl(new mapboxgl.NavigationControl(), 'top-right');
+      newMap.addControl(new mapboxgl.NavigationControl(), 'top-right');
 
       return () => {
-        map.remove();
+        map.current?.remove();
+        map.current = null;
       };
     } catch (error) {
       console.error('Error initializing map:', error);
     }
-  }, []);
-
-  if (!mapInstance.current) return null;
+  }, [officials, onZoneViolation]);
 
   return (
-    <div className="relative w-full h-full">
-      <div ref={mapContainer} className="absolute inset-0 rounded-lg shadow-lg" />
-      <ChennaiBoundary map={mapInstance.current} />
-      <OfficialMarkers 
-        map={mapInstance.current}
-        officials={officials}
-        onZoneViolation={onZoneViolation}
+    <div className="relative w-full h-full min-h-[600px]">
+      <div 
+        ref={mapContainer} 
+        className="absolute inset-0 rounded-lg shadow-lg" 
+        style={{ minHeight: '600px' }}
       />
     </div>
   );

@@ -32,11 +32,13 @@ const ControllerApp = () => {
         <h1 className="text-2xl font-bold text-bandobast-primary mb-4">Controller Dashboard</h1>
         <OfficialsList officials={officials} showLocation={true} />
       </div>
-      <div className="w-3/4">
-        <MapComponent 
-          officials={mappedOfficials}
-          onZoneViolation={handleZoneViolation} 
-        />
+      <div className="w-3/4 p-4">
+        <div className="h-full">
+          <MapComponent 
+            officials={mappedOfficials}
+            onZoneViolation={handleZoneViolation} 
+          />
+        </div>
       </div>
     </div>
   );
