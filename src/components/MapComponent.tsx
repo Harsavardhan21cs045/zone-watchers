@@ -33,14 +33,20 @@ export const MapComponent: React.FC<MapComponentProps> = ({
       const map = new mapboxgl.Map({
         container: mapContainer.current,
         style: 'mapbox://styles/mapbox/streets-v11',
-        center: [80.2707, 13.0827],
-        zoom: 12
+        center: [80.2707, 13.0827], // Chennai coordinates
+        zoom: 12,
+        pitch: 45, // Add some tilt to the map
+        bearing: -45 // Rotate slightly for better perspective
       });
 
       mapInstance.current = map;
 
+      // Add navigation controls
+      map.addControl(new mapboxgl.NavigationControl(), 'top-right');
+
       map.on('load', () => {
-        map.addSource('zones', {
+        // Add Chennai boundaries
+        map.addSource('chennai-boundary', {
           type: 'geojson',
           data: {
             type: 'Feature',
@@ -58,13 +64,26 @@ export const MapComponent: React.FC<MapComponentProps> = ({
           }
         });
 
+        // Add boundary line
         map.addLayer({
-          id: 'zone-borders',
+          id: 'boundary-line',
           type: 'line',
-          source: 'zones',
+          source: 'chennai-boundary',
           paint: {
             'line-color': '#FF0000',
-            'line-width': 2
+            'line-width': 2,
+            'line-dasharray': [2, 2]
+          }
+        });
+
+        // Add boundary fill
+        map.addLayer({
+          id: 'boundary-fill',
+          type: 'fill',
+          source: 'chennai-boundary',
+          paint: {
+            'fill-color': '#FF0000',
+            'fill-opacity': 0.1
           }
         });
       });
@@ -92,10 +111,14 @@ export const MapComponent: React.FC<MapComponentProps> = ({
 
       try {
         const el = document.createElement('div');
-        el.className = 'w-4 h-4 bg-blue-500 rounded-full border-2 border-white';
+        el.className = `w-4 h-4 rounded-full border-2 border-white ${
+          official.status === 'on-duty' ? 'bg-green-500' : 'bg-red-500'
+        }`;
         
         const marker = new mapboxgl.Marker(el)
           .setLngLat(official.location)
+          .setPopup(new mapboxgl.Popup({ offset: 25 })
+            .setHTML(`<strong>${official.name}</strong><br>Status: ${official.status}`))
           .addTo(mapInstance.current!);
         
         markersRef.current[official.id] = marker;
@@ -116,7 +139,7 @@ export const MapComponent: React.FC<MapComponentProps> = ({
 
   return (
     <div className="relative w-full h-full">
-      <div ref={mapContainer} className="absolute inset-0" />
+      <div ref={mapContainer} className="absolute inset-0 rounded-lg shadow-lg" />
     </div>
   );
 };
