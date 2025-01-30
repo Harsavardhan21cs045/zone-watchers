@@ -1,4 +1,3 @@
-import React from 'react';
 import mapboxgl from 'mapbox-gl';
 
 interface ChennaiBoundaryProps {
@@ -6,27 +5,35 @@ interface ChennaiBoundaryProps {
 }
 
 export class ChennaiBoundary {
+  private map: mapboxgl.Map;
+
   constructor({ map }: ChennaiBoundaryProps) {
-    // Add the boundary layer
-    map.addLayer({
+    this.map = map;
+    this.addBoundaryLayer();
+  }
+
+  private addBoundaryLayer() {
+    const geojsonData = {
+      type: 'Feature' as const,
+      properties: {},
+      geometry: {
+        type: 'Polygon' as const,
+        coordinates: [[
+          [80.2497, 13.0427],
+          [80.2897, 13.0427],
+          [80.2897, 13.0827],
+          [80.2497, 13.0827],
+          [80.2497, 13.0427]
+        ]]
+      }
+    };
+
+    this.map.addLayer({
       id: 'chennai-boundary',
       type: 'line',
       source: {
         type: 'geojson',
-        data: {
-          type: 'Feature',
-          properties: {},  // Added required empty properties object
-          geometry: {
-            type: 'Polygon',
-            coordinates: [[
-              [80.2497, 13.0427],
-              [80.2897, 13.0427],
-              [80.2897, 13.0827],
-              [80.2497, 13.0827],
-              [80.2497, 13.0427]
-            ]]
-          }
-        }
+        data: geojsonData
       },
       paint: {
         'line-color': '#FF0000',
@@ -34,17 +41,14 @@ export class ChennaiBoundary {
         'line-dasharray': [2, 2]
       }
     });
-
-    // Add cleanup method
-    this.cleanup = () => {
-      if (map.getLayer('chennai-boundary')) {
-        map.removeLayer('chennai-boundary');
-      }
-      if (map.getSource('chennai-boundary')) {
-        map.removeSource('chennai-boundary');
-      }
-    };
   }
 
-  cleanup: () => void;
+  cleanup() {
+    if (this.map.getLayer('chennai-boundary')) {
+      this.map.removeLayer('chennai-boundary');
+    }
+    if (this.map.getSource('chennai-boundary')) {
+      this.map.removeSource('chennai-boundary');
+    }
+  }
 }
