@@ -33,7 +33,7 @@ export const MapComponent: React.FC<MapComponentProps> = ({
     console.log('Initializing map...');
     
     try {
-      const newMap = new mapboxgl.Map({
+      map.current = new mapboxgl.Map({
         container: mapContainer.current,
         style: 'mapbox://styles/mapbox/streets-v12',
         center: [80.2707, 13.0827], // Chennai coordinates
@@ -42,31 +42,37 @@ export const MapComponent: React.FC<MapComponentProps> = ({
         bearing: -45
       });
 
-      map.current = newMap;
-
-      newMap.on('load', () => {
+      map.current.on('load', () => {
         console.log('Map loaded successfully');
         if (map.current) {
-          // Create instances without 'new' keyword
-          ChennaiBoundary({ map: map.current });
-          OfficialMarkers({ 
-            map: map.current, 
-            officials, 
-            onZoneViolation 
-          });
+          // Render components properly
+          return (
+            <>
+              <ChennaiBoundary map={map.current} />
+              <OfficialMarkers 
+                map={map.current} 
+                officials={officials} 
+                onZoneViolation={onZoneViolation} 
+              />
+            </>
+          );
         }
       });
 
       // Add navigation controls
-      newMap.addControl(new mapboxgl.NavigationControl(), 'top-right');
+      map.current.addControl(new mapboxgl.NavigationControl(), 'top-right');
 
-      return () => {
-        map.current?.remove();
-        map.current = null;
-      };
     } catch (error) {
       console.error('Error initializing map:', error);
     }
+
+    // Cleanup function
+    return () => {
+      if (map.current) {
+        map.current.remove();
+        map.current = null;
+      }
+    };
   }, [officials, onZoneViolation]);
 
   return (
