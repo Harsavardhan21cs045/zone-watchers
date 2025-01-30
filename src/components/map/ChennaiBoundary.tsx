@@ -1,12 +1,12 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import mapboxgl from 'mapbox-gl';
 
 interface ChennaiBoundaryProps {
   map: mapboxgl.Map;
 }
 
-export const ChennaiBoundary: React.FC<ChennaiBoundaryProps> = ({ map }) => {
-  useEffect(() => {
+export class ChennaiBoundary {
+  constructor({ map }: ChennaiBoundaryProps) {
     // Add the boundary layer
     map.addLayer({
       id: 'chennai-boundary',
@@ -15,6 +15,7 @@ export const ChennaiBoundary: React.FC<ChennaiBoundaryProps> = ({ map }) => {
         type: 'geojson',
         data: {
           type: 'Feature',
+          properties: {},  // Added required empty properties object
           geometry: {
             type: 'Polygon',
             coordinates: [[
@@ -34,8 +35,8 @@ export const ChennaiBoundary: React.FC<ChennaiBoundaryProps> = ({ map }) => {
       }
     });
 
-    // Cleanup
-    return () => {
+    // Add cleanup method
+    this.cleanup = () => {
       if (map.getLayer('chennai-boundary')) {
         map.removeLayer('chennai-boundary');
       }
@@ -43,7 +44,7 @@ export const ChennaiBoundary: React.FC<ChennaiBoundaryProps> = ({ map }) => {
         map.removeSource('chennai-boundary');
       }
     };
-  }, [map]);
+  }
 
-  return null;
-};
+  cleanup: () => void;
+}

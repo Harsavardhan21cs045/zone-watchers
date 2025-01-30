@@ -45,17 +45,12 @@ export const MapComponent: React.FC<MapComponentProps> = ({
       map.current.on('load', () => {
         console.log('Map loaded successfully');
         if (map.current) {
-          // Render components properly
-          return (
-            <>
-              <ChennaiBoundary map={map.current} />
-              <OfficialMarkers 
-                map={map.current} 
-                officials={officials} 
-                onZoneViolation={onZoneViolation} 
-              />
-            </>
-          );
+          const chennaiBoundary = new ChennaiBoundary({ map: map.current });
+          const officialMarkers = new OfficialMarkers({ 
+            map: map.current, 
+            officials, 
+            onZoneViolation 
+          });
         }
       });
 

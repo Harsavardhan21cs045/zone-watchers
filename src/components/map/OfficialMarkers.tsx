@@ -1,4 +1,3 @@
-import { useEffect, useRef } from 'react';
 import mapboxgl from 'mapbox-gl';
 
 interface Official {
@@ -14,15 +13,10 @@ interface OfficialMarkersProps {
   onZoneViolation?: (officialId: string) => void;
 }
 
-export const OfficialMarkers = ({ map, officials, onZoneViolation }: OfficialMarkersProps) => {
-  const markersRef = useRef<{ [key: string]: mapboxgl.Marker }>({});
+export class OfficialMarkers {
+  private markers: { [key: string]: mapboxgl.Marker } = {};
 
-  useEffect(() => {
-    // Remove existing markers
-    Object.values(markersRef.current).forEach(marker => marker.remove());
-    markersRef.current = {};
-
-    // Add new markers
+  constructor({ map, officials, onZoneViolation }: OfficialMarkersProps) {
     officials.forEach(official => {
       if (!official.location) return;
 
@@ -38,7 +32,7 @@ export const OfficialMarkers = ({ map, officials, onZoneViolation }: OfficialMar
             .setHTML(`<strong>${official.name}</strong><br>Status: ${official.status}`))
           .addTo(map);
         
-        markersRef.current[official.id] = marker;
+        this.markers[official.id] = marker;
 
         // Check zone violation
         const [lng, lat] = official.location;
@@ -52,12 +46,10 @@ export const OfficialMarkers = ({ map, officials, onZoneViolation }: OfficialMar
         console.error('Error adding marker for official:', official.id, error);
       }
     });
+  }
 
-    return () => {
-      Object.values(markersRef.current).forEach(marker => marker.remove());
-      markersRef.current = {};
-    };
-  }, [map, officials, onZoneViolation]);
-
-  return null;
-};
+  cleanup() {
+    Object.values(this.markers).forEach(marker => marker.remove());
+    this.markers = {};
+  }
+}
