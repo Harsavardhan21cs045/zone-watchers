@@ -1,10 +1,10 @@
 import React, { useEffect } from 'react';
 import { MapComponent } from '../components/MapComponent';
 import { useToast } from '@/hooks/use-toast';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase, type Task, type Official } from '../lib/supabase';
+import { supabase } from '../lib/supabase';
+import { TasksList } from '@/components/TasksList';
+import { OfficialHeader } from '@/components/OfficialHeader';
 
 const OfficialApp = () => {
   const { toast } = useToast();
@@ -33,50 +33,34 @@ const OfficialApp = () => {
         throw error;
       }
       
-      console.log('Official data fetched:', data);
       return data;
     }
   });
 
-  // Fetch incomplete tasks
-  const { data: tasks = [], isLoading: isLoadingTasks, error: tasksError } = useQuery({
+  // Fetch tasks assigned to the current official
+  const { data: tasks = [], isLoading: isLoadingTasks } = useQuery({
     queryKey: ['officialTasks'],
     queryFn: async () => {
-      console.log('Fetching tasks...');
       const { data: { user } } = await supabase.auth.getUser();
       
-      if (!user) {
-        console.log('No authenticated user found');
-        throw new Error('Not authenticated');
-      }
+      if (!user) throw new Error('Not authenticated');
 
       const { data, error } = await supabase
         .from('tasks')
         .select('*')
-        .eq('assigned_to', user.id)
-        .in('status', ['pending', 'in-progress']);
+        .eq('assigned_to', user.id);
       
-      if (error) {
-        console.error('Error fetching tasks:', error);
-        throw error;
-      }
-      
-      console.log('Tasks fetched:', data);
+      if (error) throw error;
       return data || [];
     },
-    enabled: !!currentOfficial // Only fetch tasks if we have the current official
+    enabled: !!currentOfficial
   });
 
   // Update location mutation
   const updateLocation = useMutation({
     mutationFn: async (location: [number, number]) => {
-      console.log('Updating location:', location);
       const { data: { user } } = await supabase.auth.getUser();
-      
-      if (!user) {
-        console.log('No authenticated user found');
-        throw new Error('Not authenticated');
-      }
+      if (!user) throw new Error('Not authenticated');
 
       const { error } = await supabase
         .from('officials')
@@ -86,18 +70,12 @@ const OfficialApp = () => {
         })
         .eq('id', user.id);
 
-      if (error) {
-        console.error('Error updating location:', error);
-        throw error;
-      }
-      
-      console.log('Location updated successfully');
+      if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['currentOfficial'] });
     },
-    onError: (error) => {
-      console.error('Location update error:', error);
+    onError: () => {
       toast({
         title: "Error",
         description: "Failed to update location",
@@ -122,27 +100,6 @@ const OfficialApp = () => {
     return () => clearInterval(interval);
   }, [currentOfficial?.current_location]);
 
-  // Subscribe to real-time updates
-  useEffect(() => {
-    console.log('Setting up real-time subscription...');
-    const tasksSubscription = supabase
-      .channel('official-tasks')
-      .on('postgres_changes',
-        { event: '*', schema: 'public', table: 'tasks' },
-        (payload) => {
-          console.log('Tasks update received:', payload);
-          queryClient.invalidateQueries({ queryKey: ['officialTasks'] });
-        }
-      )
-      .subscribe();
-
-    return () => {
-      console.log('Cleaning up subscription...');
-      tasksSubscription.unsubscribe();
-    };
-  }, [queryClient]);
-
-  // Handle loading states
   if (isLoadingOfficial || isLoadingTasks) {
     return (
       <div className="flex h-screen items-center justify-center">
@@ -151,12 +108,11 @@ const OfficialApp = () => {
     );
   }
 
-  // Handle errors
-  if (officialError || tasksError) {
+  if (officialError) {
     return (
       <div className="flex h-screen items-center justify-center">
         <div className="text-red-500">
-          {(officialError as Error)?.message || (tasksError as Error)?.message || 'An error occurred'}
+          {(officialError as Error)?.message || 'An error occurred'}
         </div>
       </div>
     );
@@ -172,38 +128,11 @@ const OfficialApp = () => {
 
   return (
     <div className="flex flex-col h-screen bg-gray-100">
-      <div className="bg-primary text-primary-foreground p-4">
-        <h1 className="text-xl font-bold">Official Dashboard</h1>
-        <p className="text-sm opacity-90">Chennai Police Department</p>
-      </div>
+      <OfficialHeader official={currentOfficial} />
       
       <div className="flex flex-1 p-4 gap-4">
         <div className="w-1/3 space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Pending Tasks</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                {tasks.map(task => (
-                  <div 
-                    key={task.id} 
-                    className="p-3 bg-card rounded-lg border shadow-sm"
-                  >
-                    <h3 className="font-medium">{task.title}</h3>
-                    <div className="flex justify-between items-center mt-2">
-                      <Badge variant={task.status === 'pending' ? 'destructive' : 'default'}>
-                        {task.status}
-                      </Badge>
-                    </div>
-                  </div>
-                ))}
-                {tasks.length === 0 && (
-                  <p className="text-sm text-muted-foreground">No pending tasks</p>
-                )}
-              </div>
-            </CardContent>
-          </Card>
+          <TasksList tasks={tasks} />
         </div>
         
         <div className="flex-1 bg-white rounded-lg shadow-lg overflow-hidden">
