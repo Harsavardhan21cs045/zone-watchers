@@ -23,7 +23,7 @@ export const useControllerData = () => {
         if (error) {
           console.error('Supabase error:', error);
           console.log('Using mock officials data');
-          return mockOfficials;
+          throw error;
         }
         
         // Map data to ensure serializable objects
@@ -44,7 +44,8 @@ export const useControllerData = () => {
       }
     },
     refetchInterval: 5000,
-    retry: 1
+    retry: 1,
+    retryDelay: 1000
   });
 
   // Use mock tasks and assign them to officials
@@ -66,6 +67,7 @@ export const useControllerData = () => {
   // Show errors if any
   useEffect(() => {
     if (officialsError) {
+      console.error('Officials fetch error:', officialsError);
       toast({
         title: "Connection Issue",
         description: "Using mock data. Please check your connection.",

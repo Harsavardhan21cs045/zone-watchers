@@ -9,20 +9,39 @@ if (!supabaseUrl || !supabaseAnonKey) {
   throw new Error('Missing Supabase credentials');
 }
 
-// Create Supabase client
+// Create Supabase client with additional options
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
     autoRefreshToken: true,
     persistSession: true,
     detectSessionInUrl: false
+  },
+  db: {
+    schema: 'public'
+  },
+  global: {
+    headers: {
+      'Content-Type': 'application/json'
+    }
   }
 });
 
-// Log connection status
+// Log connection status and add error handling
 supabase.auth.onAuthStateChange((event, session) => {
   console.log('Supabase auth event:', event);
   console.log('Session status:', session ? 'active' : 'none');
 });
+
+// Add error handling for database queries
+supabase.from('officials').select('*').then(
+  ({ data, error }) => {
+    if (error) {
+      console.error('Database connection test failed:', error);
+    } else {
+      console.log('Database connection test successful');
+    }
+  }
+);
 
 export type Task = {
   id: string;
