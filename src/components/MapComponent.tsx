@@ -1,10 +1,6 @@
-import React, { useEffect, useRef, useState } from 'react';
-import mapboxgl from 'mapbox-gl';
-import 'mapbox-gl/dist/mapbox-gl.css';
-import { ChennaiBoundary } from './map/ChennaiBoundary';
-import { OfficialMarkers } from './map/OfficialMarkers';
+import React, { useRef } from 'react';
+import { GoogleMap, LoadScript, Marker } from '@react-google-maps/api';
 import { useToast } from '@/hooks/use-toast';
-import { supabase } from '../lib/supabase';
 
 interface Official {
   id: string;
@@ -19,129 +15,79 @@ interface MapComponentProps {
   isOfficialApp?: boolean;
 }
 
+const containerStyle = {
+  width: '100%',
+  height: '600px'
+};
+
+const chennaiBounds = {
+  north: 13.2367,
+  south: 12.9343,
+  east: 80.3327,
+  west: 80.1849,
+};
+
+const chennaiCenter = {
+  lat: 13.0827,
+  lng: 80.2707
+};
+
 export const MapComponent: React.FC<MapComponentProps> = ({ 
   officials, 
   onZoneViolation,
   isOfficialApp = false 
 }) => {
-  const mapContainer = useRef<HTMLDivElement>(null);
-  const map = useRef<mapboxgl.Map | null>(null);
-  const [mapToken, setMapToken] = useState<string | null>(null);
   const { toast } = useToast();
-  const boundaryRef = useRef<ChennaiBoundary | null>(null);
-  const markersRef = useRef<OfficialMarkers | null>(null);
+  const mapRef = useRef(null);
 
-  // Fetch Mapbox token from Supabase
-  useEffect(() => {
-    const fetchMapboxToken = async () => {
-      try {
-        console.log('Fetching Mapbox token...');
-        const { data: { MAPBOX_PUBLIC_TOKEN }, error } = await supabase
-          .from('secrets')
-          .select('MAPBOX_PUBLIC_TOKEN')
-          .single();
-
-        if (error) {
-          console.error('Error fetching Mapbox token:', error);
-          toast({
-            title: "Configuration Error",
-            description: "Please add your Mapbox token in project settings",
-            variant: "destructive"
-          });
-          return;
-        }
-
-        if (MAPBOX_PUBLIC_TOKEN) {
-          console.log('Mapbox token fetched successfully');
-          setMapToken(MAPBOX_PUBLIC_TOKEN);
-        }
-      } catch (error) {
-        console.error('Error in fetchMapboxToken:', error);
-      }
-    };
-
-    fetchMapboxToken();
-  }, [toast]);
-
-  useEffect(() => {
-    if (!mapContainer.current || map.current || !mapToken) return;
-
-    console.log('Initializing map...');
+  const checkZoneViolation = (position: google.maps.LatLng) => {
+    const lat = position.lat();
+    const lng = position.lng();
     
-    try {
-      mapboxgl.accessToken = mapToken;
-      
-      map.current = new mapboxgl.Map({
-        container: mapContainer.current,
-        style: 'mapbox://styles/mapbox/streets-v12',
-        center: [80.2707, 13.0827],
-        zoom: 12,
-        pitch: 45,
-        bearing: -45
-      });
-
-      map.current.on('load', () => {
-        console.log('Map loaded successfully');
-        if (map.current) {
-          try {
-            boundaryRef.current = new ChennaiBoundary({ map: map.current });
-            markersRef.current = new OfficialMarkers({ 
-              map: map.current, 
-              officials, 
-              onZoneViolation 
-            });
-          } catch (error) {
-            console.error('Error initializing map components:', error);
-            toast({
-              title: "Map Error",
-              description: "There was an error loading the map components",
-              variant: "destructive"
-            });
-          }
-        }
-      });
-
-      map.current.on('error', (e) => {
-        console.error('Mapbox error:', e);
-        if (e.error && typeof e.error === 'object' && 'status' in e.error) {
-          if (e.error.status === 401) {
-            toast({
-              title: "Invalid Map Token",
-              description: "Please check your Mapbox access token",
-              variant: "destructive"
-            });
-          }
-        }
-      });
-
-      map.current.addControl(new mapboxgl.NavigationControl(), 'top-right');
-
-    } catch (error) {
-      console.error('Error initializing map:', error);
-      toast({
-        title: "Map Error",
-        description: "There was an error initializing the map",
-        variant: "destructive"
-      });
+    if (lat < chennaiBounds.south || lat > chennaiBounds.north || 
+        lng < chennaiBounds.west || lng > chennaiBounds.east) {
+      return true;
     }
+    return false;
+  };
 
-    return () => {
-      boundaryRef.current?.cleanup();
-      markersRef.current?.cleanup();
-      if (map.current) {
-        map.current.remove();
-        map.current = null;
-      }
-    };
-  }, [officials, onZoneViolation, mapToken, toast]);
+  const handleMarkerDrag = (officialId: string, position: google.maps.LatLng) => {
+    if (checkZoneViolation(position) && onZoneViolation) {
+      onZoneViolation(officialId);
+    }
+  };
 
   return (
     <div className="relative w-full h-full min-h-[600px]">
-      <div 
-        ref={mapContainer} 
-        className="absolute inset-0 rounded-lg shadow-lg" 
-        style={{ minHeight: '600px' }}
-      />
+      <LoadScript googleMapsApiKey=""> 
+        <GoogleMap
+          mapContainerStyle={containerStyle}
+          center={chennaiCenter}
+          zoom={12}
+          options={{
+            restriction: {
+              latLngBounds: chennaiBounds,
+              strictBounds: false,
+            },
+            streetViewControl: false,
+            mapTypeControl: false,
+          }}
+        >
+          {officials.map((official) => (
+            <Marker
+              key={official.id}
+              position={{ lat: official.location[1], lng: official.location[0] }}
+              title={official.name}
+              draggable={isOfficialApp}
+              onDragEnd={(e) => {
+                if (e.latLng) {
+                  handleMarkerDrag(official.id, e.latLng);
+                }
+              }}
+            />
+          ))}
+        </GoogleMap>
+      </LoadScript>
     </div>
   );
 };
