@@ -4,6 +4,7 @@ import 'mapbox-gl/dist/mapbox-gl.css';
 import { ChennaiBoundary } from './map/ChennaiBoundary';
 import { OfficialMarkers } from './map/OfficialMarkers';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '../lib/supabase';
 
 interface Official {
   id: string;
@@ -18,8 +19,6 @@ interface MapComponentProps {
   isOfficialApp?: boolean;
 }
 
-const defaultToken = 'pk.eyJ1IjoibG92YWJsZSIsImEiOiJjbHM0Z2NyNHQwbWR4MmptbGw3ZjBocWo0In0.qY4WRhhYoIxMqaXfAQVj5Q';
-
 export const MapComponent: React.FC<MapComponentProps> = ({ 
   officials, 
   onZoneViolation,
@@ -27,13 +26,45 @@ export const MapComponent: React.FC<MapComponentProps> = ({
 }) => {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
-  const [mapToken, setMapToken] = useState(defaultToken);
+  const [mapToken, setMapToken] = useState<string | null>(null);
   const { toast } = useToast();
   const boundaryRef = useRef<ChennaiBoundary | null>(null);
   const markersRef = useRef<OfficialMarkers | null>(null);
 
+  // Fetch Mapbox token from Supabase
   useEffect(() => {
-    if (!mapContainer.current || map.current) return;
+    const fetchMapboxToken = async () => {
+      try {
+        console.log('Fetching Mapbox token...');
+        const { data: { MAPBOX_PUBLIC_TOKEN }, error } = await supabase
+          .from('secrets')
+          .select('MAPBOX_PUBLIC_TOKEN')
+          .single();
+
+        if (error) {
+          console.error('Error fetching Mapbox token:', error);
+          toast({
+            title: "Configuration Error",
+            description: "Please add your Mapbox token in project settings",
+            variant: "destructive"
+          });
+          return;
+        }
+
+        if (MAPBOX_PUBLIC_TOKEN) {
+          console.log('Mapbox token fetched successfully');
+          setMapToken(MAPBOX_PUBLIC_TOKEN);
+        }
+      } catch (error) {
+        console.error('Error in fetchMapboxToken:', error);
+      }
+    };
+
+    fetchMapboxToken();
+  }, [toast]);
+
+  useEffect(() => {
+    if (!mapContainer.current || map.current || !mapToken) return;
 
     console.log('Initializing map...');
     
