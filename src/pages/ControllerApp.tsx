@@ -33,7 +33,7 @@ const ControllerApp = () => {
         <OfficialsList officials={officials} showLocation={true} />
       </div>
       <div className="w-3/4 p-4">
-        <div className="h-full">
+        <div className="h-full rounded-lg overflow-hidden shadow-lg">
           <MapComponent 
             officials={mappedOfficials}
             onZoneViolation={handleZoneViolation} 
