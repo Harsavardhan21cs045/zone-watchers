@@ -21,7 +21,8 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   },
   global: {
     headers: {
-      'Content-Type': 'application/json'
+      'Content-Type': 'application/json',
+      'Access-Control-Allow-Origin': '*'
     }
   }
 });
@@ -32,16 +33,21 @@ supabase.auth.onAuthStateChange((event, session) => {
   console.log('Session status:', session ? 'active' : 'none');
 });
 
-// Add error handling for database queries
-supabase.from('officials').select('*').then(
-  ({ data, error }) => {
+// Test database connection
+const testConnection = async () => {
+  try {
+    const { data, error } = await supabase.from('officials').select('*').limit(1);
     if (error) {
       console.error('Database connection test failed:', error);
     } else {
       console.log('Database connection test successful');
     }
+  } catch (err) {
+    console.error('Connection error:', err);
   }
-);
+};
+
+testConnection();
 
 export type Task = {
   id: string;

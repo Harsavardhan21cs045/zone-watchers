@@ -1,69 +1,89 @@
-# Welcome to your Lovable project
+# Bandobast - Police Duty Management System
 
-## Project info
+## Local Development Setup
 
-**URL**: https://lovable.dev/projects/0b14e662-5402-4e47-864e-ff52a0228b4f
+1. **Prerequisites**
+   - Node.js (v16 or higher)
+   - npm (v7 or higher)
+   - VSCode
+   - Git
 
-## How can I edit this code?
+2. **VSCode Extensions**
+   Install the following extensions for the best development experience:
+   - ESLint
+   - Prettier
+   - Tailwind CSS IntelliSense
+   - TypeScript and JavaScript Language Features
 
-There are several ways of editing your application.
+3. **Setup Steps**
 
-**Use Lovable**
+```bash
+# Clone the repository
+git clone <your-repo-url>
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/0b14e662-5402-4e47-864e-ff52a0228b4f) and start prompting.
+# Navigate to project directory
+cd bandobast
 
-Changes made via Lovable will be committed automatically to this repo.
+# Install dependencies
+npm install
 
-**Use your preferred IDE**
-
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
-
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
-
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
+# Start development server
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+4. **Environment Setup**
+   The project uses Supabase for the backend. The credentials are already configured in the code for development.
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+5. **Available Scripts**
+   - `npm run dev` - Start development server
+   - `npm run build` - Build for production
+   - `npm run preview` - Preview production build locally
 
-**Use GitHub Codespaces**
+6. **Project Structure**
+   ```
+   src/
+   ├── components/     # Reusable UI components
+   ├── hooks/         # Custom React hooks
+   ├── lib/           # Utilities and configurations
+   ├── pages/         # Page components
+   └── main.tsx       # Application entry point
+   ```
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+7. **Features**
+   - Real-time location tracking
+   - Task management
+   - Official status monitoring
+   - Zone violation detection
 
-## What technologies are used for this project?
-
-This project is built with .
-
-- Vite
-- TypeScript
+## Technologies Used
 - React
-- shadcn-ui
+- TypeScript
+- Vite
 - Tailwind CSS
+- shadcn/ui
+- Supabase
+- Google Maps API
 
-## How can I deploy this project?
+## Troubleshooting
 
-Simply open [Lovable](https://lovable.dev/projects/0b14e662-5402-4e47-864e-ff52a0228b4f) and click on Share -> Publish.
+If you encounter any issues:
 
-## I want to use a custom domain - is that possible?
+1. **Database Connection Issues**
+   - Check console for detailed error messages
+   - Ensure you're connected to the internet
+   - The app will fallback to mock data if connection fails
 
-We don't support custom domains (yet). If you want to deploy your project under your own domain then we recommend using Netlify. Visit our docs for more details: [Custom domains](https://docs.lovable.dev/tips-tricks/custom-domain/)
+2. **Build Issues**
+   - Clear npm cache: `npm cache clean --force`
+   - Delete node_modules and reinstall: 
+     ```bash
+     rm -rf node_modules
+     npm install
+     ```
+
+3. **Map Issues**
+   - Ensure you have a stable internet connection
+   - Check console for any API-related errors
+
+## Support
+For any issues or questions, please open an issue in the repository.
