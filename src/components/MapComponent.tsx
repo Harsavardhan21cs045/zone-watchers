@@ -18,7 +18,6 @@ interface MapComponentProps {
   isOfficialApp?: boolean;
 }
 
-// Initialize with a default token, but allow it to be overridden
 const defaultToken = 'pk.eyJ1IjoibG92YWJsZSIsImEiOiJjbHM0Z2NyNHQwbWR4MmptbGw3ZjBocWo0In0.qY4WRhhYoIxMqaXfAQVj5Q';
 
 export const MapComponent: React.FC<MapComponentProps> = ({ 
@@ -73,16 +72,17 @@ export const MapComponent: React.FC<MapComponentProps> = ({
 
       map.current.on('error', (e) => {
         console.error('Mapbox error:', e);
-        if (e.error.status === 401) {
-          toast({
-            title: "Invalid Map Token",
-            description: "Please check your Mapbox access token",
-            variant: "destructive"
-          });
+        if (e.error && typeof e.error === 'object' && 'status' in e.error) {
+          if (e.error.status === 401) {
+            toast({
+              title: "Invalid Map Token",
+              description: "Please check your Mapbox access token",
+              variant: "destructive"
+            });
+          }
         }
       });
 
-      // Add navigation controls
       map.current.addControl(new mapboxgl.NavigationControl(), 'top-right');
 
     } catch (error) {
@@ -94,7 +94,6 @@ export const MapComponent: React.FC<MapComponentProps> = ({
       });
     }
 
-    // Cleanup function
     return () => {
       boundaryRef.current?.cleanup();
       markersRef.current?.cleanup();
