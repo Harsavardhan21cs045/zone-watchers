@@ -4,12 +4,12 @@ import { mockTasks } from '../data/mockTasks';
 import { mockOfficials } from '../data/mockOfficials';
 import { useToast } from './use-toast';
 import { useEffect } from 'react';
+import type { Official } from '@/lib/supabase';
 
 export const useControllerData = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  // Fetch officials with Firebase
   const { data: officials = [], error: officialsError } = useQuery({
     queryKey: ['officials'],
     queryFn: async () => {
@@ -29,7 +29,6 @@ export const useControllerData = () => {
     retryDelay: 1000
   });
 
-  // Use mock tasks and assign them to officials
   const { data: tasks = [] } = useQuery({
     queryKey: ['tasks'],
     queryFn: async () => {
@@ -45,7 +44,6 @@ export const useControllerData = () => {
     staleTime: Infinity
   });
 
-  // Show errors if any
   useEffect(() => {
     if (officialsError) {
       console.error('Officials fetch error:', officialsError);
@@ -57,7 +55,6 @@ export const useControllerData = () => {
     }
   }, [officialsError, toast]);
 
-  // Subscribe to real-time updates using Firebase
   useEffect(() => {
     console.log('Setting up Firebase real-time subscriptions...');
     
@@ -73,7 +70,7 @@ export const useControllerData = () => {
   }, [queryClient]);
 
   return { 
-    officials: officials || mockOfficials, 
+    officials: officials as Official[], 
     tasks: tasks || mockTasks 
   };
 };

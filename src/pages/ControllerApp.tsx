@@ -3,6 +3,7 @@ import { MapComponent } from '../components/MapComponent';
 import { OfficialsList } from '../components/OfficialsList';
 import { useToast } from '@/hooks/use-toast';
 import { useControllerData } from '@/hooks/useControllerData';
+import type { Official } from '@/lib/supabase';
 
 const ControllerApp = () => {
   const { toast } = useToast();
