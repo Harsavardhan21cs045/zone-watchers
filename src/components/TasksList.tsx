@@ -2,13 +2,14 @@ import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { Task } from '@/lib/supabase';
+import { Task } from '@/lib/types';
 
 interface TasksListProps {
   tasks: Task[];
+  officialId?: string;
 }
 
-export const TasksList = ({ tasks }: TasksListProps) => {
+export const TasksList = ({ tasks, officialId }: TasksListProps) => {
   const getProgressValue = (status: string) => {
     switch (status) {
       case 'pending':
@@ -35,6 +36,11 @@ export const TasksList = ({ tasks }: TasksListProps) => {
     }
   };
 
+  // Filter tasks for the specific official if officialId is provided
+  const filteredTasks = officialId 
+    ? tasks.filter(task => task.assigned_to === officialId)
+    : tasks;
+
   return (
     <Card>
       <CardHeader>
@@ -42,7 +48,7 @@ export const TasksList = ({ tasks }: TasksListProps) => {
       </CardHeader>
       <CardContent>
         <div className="space-y-4">
-          {tasks.map(task => (
+          {filteredTasks.map(task => (
             <div 
               key={task.id} 
               className="p-4 bg-gray-50 rounded-lg border border-gray-200"
@@ -58,7 +64,7 @@ export const TasksList = ({ tasks }: TasksListProps) => {
               </div>
             </div>
           ))}
-          {tasks.length === 0 && (
+          {filteredTasks.length === 0 && (
             <p className="text-sm text-muted-foreground">No tasks assigned</p>
           )}
         </div>
