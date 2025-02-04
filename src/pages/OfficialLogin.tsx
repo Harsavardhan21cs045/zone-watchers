@@ -16,6 +16,7 @@ import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { getAuth, signInWithEmailAndPassword } from 'firebase/auth';
 import { doc, getDoc, getFirestore } from 'firebase/firestore';
+import { initializeFirebase } from '@/lib/firebase';
 
 const formSchema = z.object({
   email: z.string().email({
@@ -29,8 +30,6 @@ const formSchema = z.object({
 const OfficialLogin = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
-  const auth = getAuth();
-  const db = getFirestore();
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -42,8 +41,10 @@ const OfficialLogin = () => {
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     try {
-      console.log('Attempting to sign in official:', values.email);
+      console.log('Initializing Firebase...');
+      const { auth, db } = await initializeFirebase();
       
+      console.log('Attempting to sign in official:', values.email);
       const userCredential = await signInWithEmailAndPassword(
         auth,
         values.email,
