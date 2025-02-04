@@ -14,58 +14,57 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { supabase } from '@/lib/supabase';
+import { getAuth, signInWithEmailAndPassword } from 'firebase/auth';
+import { doc, getDoc, getFirestore } from 'firebase/firestore';
 
 const formSchema = z.object({
-  name: z.string().min(2, {
-    message: "Name must be at least 2 characters.",
+  email: z.string().email({
+    message: "Please enter a valid email address.",
   }),
-  userId: z.string().min(3, {
-    message: "User ID must be at least 3 characters.",
+  password: z.string().min(6, {
+    message: "Password must be at least 6 characters.",
   }),
 });
 
 const OfficialLogin = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
+  const auth = getAuth();
+  const db = getFirestore();
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      name: "",
-      userId: "",
+      email: "",
+      password: "",
     },
   });
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     try {
-      console.log('Attempting to sign in official:', values);
+      console.log('Attempting to sign in official:', values.email);
       
-      const { data, error } = await supabase
-        .from('officials')
-        .select('*')
-        .eq('id', values.userId)
-        .eq('name', values.name)
-        .single();
+      const userCredential = await signInWithEmailAndPassword(
+        auth,
+        values.email,
+        values.password
+      );
 
-      if (error) {
-        console.error('Login error:', error);
-        throw error;
+      const officialDoc = await getDoc(doc(db, 'officials', userCredential.user.uid));
+      
+      if (!officialDoc.exists()) {
+        throw new Error('Official not found');
       }
 
-      if (!data) {
-        throw new Error('Invalid credentials');
-      }
-
-      console.log('Official logged in successfully:', data);
+      const officialData = officialDoc.data();
       
       // Store the official's info in localStorage
-      localStorage.setItem('officialId', data.id);
-      localStorage.setItem('officialName', data.name);
+      localStorage.setItem('officialId', userCredential.user.uid);
+      localStorage.setItem('officialName', officialData.name);
 
       toast({
         title: "Login Successful",
-        description: `Welcome, ${data.name}!`,
+        description: `Welcome, ${officialData.name}!`,
       });
 
       navigate('/official');
@@ -91,12 +90,12 @@ const OfficialLogin = () => {
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
             <FormField
               control={form.control}
-              name="name"
+              name="email"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Name</FormLabel>
+                  <FormLabel>Email</FormLabel>
                   <FormControl>
-                    <Input placeholder="Enter your name" {...field} />
+                    <Input type="email" placeholder="Enter your email" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -105,12 +104,12 @@ const OfficialLogin = () => {
 
             <FormField
               control={form.control}
-              name="userId"
+              name="password"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>User ID</FormLabel>
+                  <FormLabel>Password</FormLabel>
                   <FormControl>
-                    <Input placeholder="Enter your user ID" {...field} />
+                    <Input type="password" placeholder="Enter your password" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
