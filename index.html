@@ -11,7 +11,29 @@
 
   <body>
     <div id="root"></div>
+    
+    <!-- Required GPT Engineer script -->
     <script src="https://cdn.gpteng.co/gptengineer.js" type="module"></script>
+    
+    <!-- Main application script -->
     <script type="module" src="/src/main.tsx"></script>
+    
+    <!-- Custom scripts -->
+    <script>
+      // Custom JavaScript functions
+      function handleCustomEvent() {
+        console.log('Custom event handled');
+      }
+
+      // Document ready handler
+      document.addEventListener('DOMContentLoaded', function() {
+        console.log('Document ready, custom scripts loaded');
+      });
+
+      // Window load handler
+      window.addEventListener('load', function() {
+        console.log('Window loaded completely');
+      });
+    </script>
   </body>
 </html>
