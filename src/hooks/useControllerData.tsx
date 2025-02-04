@@ -1,5 +1,5 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '../lib/supabase';
+import { getOfficials, subscribeToOfficials } from '../lib/firebase';
 import { mockTasks } from '../data/mockTasks';
 import { mockOfficials } from '../data/mockOfficials';
 import { useToast } from './use-toast';
@@ -9,34 +9,15 @@ export const useControllerData = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  // Fetch officials with better error handling
+  // Fetch officials with Firebase
   const { data: officials = [], error: officialsError } = useQuery({
     queryKey: ['officials'],
     queryFn: async () => {
-      console.log('Fetching officials...');
+      console.log('Fetching officials from Firebase...');
       try {
-        const { data, error } = await supabase
-          .from('officials')
-          .select('*')
-          .order('last_updated', { ascending: false });
-        
-        if (error) {
-          console.error('Supabase error:', error);
-          console.log('Using mock officials data');
-          throw error;
-        }
-        
-        // Map data to ensure serializable objects
-        const serializedOfficials = (data || []).map(official => ({
-          id: official.id,
-          name: official.name,
-          current_location: official.current_location,
-          status: official.status,
-          last_updated: official.last_updated
-        }));
-        
-        console.log('Officials fetched:', serializedOfficials);
-        return serializedOfficials;
+        const data = await getOfficials();
+        console.log('Officials fetched:', data);
+        return data;
       } catch (error) {
         console.error('Error fetching officials:', error);
         console.log('Using mock officials data due to error');
@@ -76,26 +57,18 @@ export const useControllerData = () => {
     }
   }, [officialsError, toast]);
 
-  // Subscribe to real-time updates with error handling
+  // Subscribe to real-time updates using Firebase
   useEffect(() => {
-    console.log('Setting up real-time subscriptions...');
+    console.log('Setting up Firebase real-time subscriptions...');
     
-    const officialsSubscription = supabase
-      .channel('officials-channel')
-      .on('postgres_changes', 
-        { event: '*', schema: 'public', table: 'officials' },
-        (payload) => {
-          console.log('Officials update received:', payload);
-          queryClient.invalidateQueries({ queryKey: ['officials'] });
-        }
-      )
-      .subscribe((status) => {
-        console.log('Officials subscription status:', status);
-      });
+    const unsubscribe = subscribeToOfficials((updatedOfficials) => {
+      console.log('Officials update received:', updatedOfficials);
+      queryClient.setQueryData(['officials'], updatedOfficials);
+    });
 
     return () => {
-      console.log('Cleaning up subscriptions...');
-      officialsSubscription.unsubscribe();
+      console.log('Cleaning up Firebase subscriptions...');
+      unsubscribe();
     };
   }, [queryClient]);
 
