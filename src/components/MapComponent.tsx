@@ -1,6 +1,7 @@
 import React, { useRef } from 'react';
-import { GoogleMap, LoadScript, Marker } from '@react-google-maps/api';
+import { GoogleMap, LoadScript, Marker, Polygon } from '@react-google-maps/api';
 import { useToast } from '@/hooks/use-toast';
+import { chennaiZonePolygon, isWithinChennaiZone } from '@/utils/geofencing';
 
 interface Official {
   id: string;
@@ -20,16 +21,17 @@ const containerStyle = {
   height: '600px'
 };
 
-const chennaiBounds = {
-  north: 13.2367,
-  south: 12.9343,
-  east: 80.3327,
-  west: 80.1849,
-};
-
 const chennaiCenter = {
   lat: 13.0827,
   lng: 80.2707
+};
+
+const polygonOptions = {
+  fillColor: "rgba(0, 255, 0, 0.1)",
+  fillOpacity: 0.3,
+  strokeColor: "#00FF00",
+  strokeOpacity: 1,
+  strokeWeight: 2,
 };
 
 export const MapComponent: React.FC<MapComponentProps> = ({ 
@@ -43,19 +45,26 @@ export const MapComponent: React.FC<MapComponentProps> = ({
   const checkZoneViolation = (position: google.maps.LatLng) => {
     const lat = position.lat();
     const lng = position.lng();
+    console.log('Checking zone violation for position:', { lat, lng });
     
-    if (lat < chennaiBounds.south || lat > chennaiBounds.north || 
-        lng < chennaiBounds.west || lng > chennaiBounds.east) {
-      return true;
-    }
-    return false;
+    const isInZone = isWithinChennaiZone(lat, lng);
+    console.log('Is within Chennai zone:', isInZone);
+    
+    return !isInZone; // Return true if there's a violation (point is outside zone)
   };
 
   const handleMarkerDrag = (officialId: string, position: google.maps.LatLng) => {
     if (checkZoneViolation(position) && onZoneViolation) {
+      console.log('Zone violation detected for official:', officialId);
       onZoneViolation(officialId);
     }
   };
+
+  // Convert polygon points to Google Maps LatLng format
+  const zonePolygonPath = chennaiZonePolygon.map(point => ({
+    lat: point.lat,
+    lng: point.lng
+  }));
 
   return (
     <div className="relative w-full h-full min-h-[600px]">
@@ -65,14 +74,17 @@ export const MapComponent: React.FC<MapComponentProps> = ({
           center={chennaiCenter}
           zoom={12}
           options={{
-            restriction: {
-              latLngBounds: chennaiBounds,
-              strictBounds: false,
-            },
             streetViewControl: false,
             mapTypeControl: false,
           }}
         >
+          {/* Render zone polygon */}
+          <Polygon
+            paths={zonePolygonPath}
+            options={polygonOptions}
+          />
+
+          {/* Render officials markers */}
           {officials.map((official) => (
             <Marker
               key={official.id}
