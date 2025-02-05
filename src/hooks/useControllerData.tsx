@@ -57,15 +57,26 @@ export const useControllerData = () => {
 
   useEffect(() => {
     console.log('Setting up Firebase real-time subscriptions...');
+    let unsubscribe: (() => void) | undefined;
     
-    const unsubscribe = subscribeToOfficials((updatedOfficials) => {
-      console.log('Officials update received:', updatedOfficials);
-      queryClient.setQueryData(['officials'], updatedOfficials);
-    });
+    const setupSubscription = async () => {
+      try {
+        unsubscribe = await subscribeToOfficials((updatedOfficials) => {
+          console.log('Officials update received:', updatedOfficials);
+          queryClient.setQueryData(['officials'], updatedOfficials);
+        });
+      } catch (error) {
+        console.error('Error setting up subscription:', error);
+      }
+    };
+
+    setupSubscription();
 
     return () => {
       console.log('Cleaning up Firebase subscriptions...');
-      unsubscribe();
+      if (unsubscribe) {
+        unsubscribe();
+      }
     };
   }, [queryClient]);
 

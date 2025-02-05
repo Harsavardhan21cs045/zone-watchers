@@ -8,20 +8,43 @@ import { supabase } from '@/integrations/supabase/client';
 const getFirebaseConfig = async () => {
   console.log('Fetching Firebase configuration...');
   try {
-    const { data: { VITE_FIREBASE_API_KEY } } = await supabase.functions.invoke('get-secret', { body: { name: 'VITE_FIREBASE_API_KEY' } });
-    const { data: { VITE_FIREBASE_AUTH_DOMAIN } } = await supabase.functions.invoke('get-secret', { body: { name: 'VITE_FIREBASE_AUTH_DOMAIN' } });
-    const { data: { VITE_FIREBASE_PROJECT_ID } } = await supabase.functions.invoke('get-secret', { body: { name: 'VITE_FIREBASE_PROJECT_ID' } });
-    const { data: { VITE_FIREBASE_STORAGE_BUCKET } } = await supabase.functions.invoke('get-secret', { body: { name: 'VITE_FIREBASE_STORAGE_BUCKET' } });
-    const { data: { VITE_FIREBASE_MESSAGING_SENDER_ID } } = await supabase.functions.invoke('get-secret', { body: { name: 'VITE_FIREBASE_MESSAGING_SENDER_ID' } });
-    const { data: { VITE_FIREBASE_APP_ID } } = await supabase.functions.invoke('get-secret', { body: { name: 'VITE_FIREBASE_APP_ID' } });
+    const { data: apiKeyResponse, error: apiKeyError } = await supabase.functions.invoke('get-secret', { 
+      body: { name: 'VITE_FIREBASE_API_KEY' } 
+    });
+    if (apiKeyError) throw new Error(`Failed to fetch API key: ${apiKeyError.message}`);
+
+    const { data: authDomainResponse, error: authDomainError } = await supabase.functions.invoke('get-secret', { 
+      body: { name: 'VITE_FIREBASE_AUTH_DOMAIN' } 
+    });
+    if (authDomainError) throw new Error(`Failed to fetch auth domain: ${authDomainError.message}`);
+
+    const { data: projectIdResponse, error: projectIdError } = await supabase.functions.invoke('get-secret', { 
+      body: { name: 'VITE_FIREBASE_PROJECT_ID' } 
+    });
+    if (projectIdError) throw new Error(`Failed to fetch project ID: ${projectIdError.message}`);
+
+    const { data: storageBucketResponse, error: storageBucketError } = await supabase.functions.invoke('get-secret', { 
+      body: { name: 'VITE_FIREBASE_STORAGE_BUCKET' } 
+    });
+    if (storageBucketError) throw new Error(`Failed to fetch storage bucket: ${storageBucketError.message}`);
+
+    const { data: messagingSenderIdResponse, error: messagingSenderIdError } = await supabase.functions.invoke('get-secret', { 
+      body: { name: 'VITE_FIREBASE_MESSAGING_SENDER_ID' } 
+    });
+    if (messagingSenderIdError) throw new Error(`Failed to fetch messaging sender ID: ${messagingSenderIdError.message}`);
+
+    const { data: appIdResponse, error: appIdError } = await supabase.functions.invoke('get-secret', { 
+      body: { name: 'VITE_FIREBASE_APP_ID' } 
+    });
+    if (appIdError) throw new Error(`Failed to fetch app ID: ${appIdError.message}`);
 
     return {
-      apiKey: VITE_FIREBASE_API_KEY,
-      authDomain: VITE_FIREBASE_AUTH_DOMAIN,
-      projectId: VITE_FIREBASE_PROJECT_ID,
-      storageBucket: VITE_FIREBASE_STORAGE_BUCKET,
-      messagingSenderId: VITE_FIREBASE_MESSAGING_SENDER_ID,
-      appId: VITE_FIREBASE_APP_ID,
+      apiKey: apiKeyResponse?.VITE_FIREBASE_API_KEY,
+      authDomain: authDomainResponse?.VITE_FIREBASE_AUTH_DOMAIN,
+      projectId: projectIdResponse?.VITE_FIREBASE_PROJECT_ID,
+      storageBucket: storageBucketResponse?.VITE_FIREBASE_STORAGE_BUCKET,
+      messagingSenderId: messagingSenderIdResponse?.VITE_FIREBASE_MESSAGING_SENDER_ID,
+      appId: appIdResponse?.VITE_FIREBASE_APP_ID,
     };
   } catch (error) {
     console.error('Error fetching Firebase configuration:', error);
@@ -38,6 +61,15 @@ export const initializeFirebase = async () => {
   if (!app) {
     console.log('Initializing Firebase...');
     const config = await getFirebaseConfig();
+    
+    // Validate config
+    const requiredFields = ['apiKey', 'authDomain', 'projectId', 'storageBucket', 'messagingSenderId', 'appId'];
+    const missingFields = requiredFields.filter(field => !config[field]);
+    
+    if (missingFields.length > 0) {
+      throw new Error(`Missing required Firebase configuration fields: ${missingFields.join(', ')}`);
+    }
+
     app = initializeApp(config);
     auth = getAuth(app);
     db = getFirestore(app);
