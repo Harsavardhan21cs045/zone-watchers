@@ -1,6 +1,8 @@
+
 import React, { useRef } from 'react';
 import { GoogleMap, LoadScript, Marker, Polygon } from '@react-google-maps/api';
 import { useToast } from '@/hooks/use-toast';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { chennaiZonePolygon, isWithinChennaiZone } from '@/utils/geofencing';
 
 interface Official {
@@ -18,7 +20,7 @@ interface MapComponentProps {
 
 const containerStyle = {
   width: '100%',
-  height: '600px'
+  height: '100%'
 };
 
 const chennaiCenter = {
@@ -41,6 +43,7 @@ export const MapComponent: React.FC<MapComponentProps> = ({
 }) => {
   const { toast } = useToast();
   const mapRef = useRef(null);
+  const isMobile = useIsMobile();
 
   const checkZoneViolation = (position: google.maps.LatLng) => {
     const lat = position.lat();
@@ -50,7 +53,7 @@ export const MapComponent: React.FC<MapComponentProps> = ({
     const isInZone = isWithinChennaiZone(lat, lng);
     console.log('Is within Chennai zone:', isInZone);
     
-    return !isInZone; // Return true if there's a violation (point is outside zone)
+    return !isInZone;
   };
 
   const handleMarkerDrag = (officialId: string, position: google.maps.LatLng) => {
@@ -60,14 +63,13 @@ export const MapComponent: React.FC<MapComponentProps> = ({
     }
   };
 
-  // Convert polygon points to Google Maps LatLng format
   const zonePolygonPath = chennaiZonePolygon.map(point => ({
     lat: point.lat,
     lng: point.lng
   }));
 
   return (
-    <div className="relative w-full h-full min-h-[600px]">
+    <div className={`relative ${isMobile ? 'h-[calc(100dvh-4rem)]' : 'h-[600px]'} w-full`}>
       <LoadScript googleMapsApiKey=""> 
         <GoogleMap
           mapContainerStyle={containerStyle}
@@ -76,15 +78,15 @@ export const MapComponent: React.FC<MapComponentProps> = ({
           options={{
             streetViewControl: false,
             mapTypeControl: false,
+            gestureHandling: isMobile ? 'greedy' : 'auto',
+            zoomControl: !isMobile,
           }}
         >
-          {/* Render zone polygon */}
           <Polygon
             paths={zonePolygonPath}
             options={polygonOptions}
           />
 
-          {/* Render officials markers */}
           {officials.map((official) => (
             <Marker
               key={official.id}
